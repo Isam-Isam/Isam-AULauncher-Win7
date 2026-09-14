@@ -1,0 +1,7 @@
+colorama
+pywin32
+pypresence
+dearpygui==0.8.64
+pyinstaller
+cx_Freeze<7.0
+pefile
