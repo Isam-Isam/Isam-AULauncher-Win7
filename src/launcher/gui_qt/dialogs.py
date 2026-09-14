@@ -143,7 +143,7 @@ class SettingsPage(QWidget):
 
         cb_rpc = QCheckBox("Discord Rich Presence")
         cb_rpc.setChecked(settings.get("discord_rpc", True))
-        cb_rpc.stateChanged.connect(lambda: self._save_setting("discord_rpc", cb_rpc.isChecked()))
+        cb_rpc.stateChanged.connect(lambda *_: self._save_setting("discord_rpc", cb_rpc.isChecked()))
         layout.addWidget(cb_rpc)
         desc1 = QLabel("Show your activity on Discord")
         desc1.setObjectName("mutedText")
@@ -153,7 +153,7 @@ class SettingsPage(QWidget):
 
         cb_auto = QCheckBox("Auto-update game")
         cb_auto.setChecked(settings.get("auto_update", True))
-        cb_auto.stateChanged.connect(lambda: self._save_setting("auto_update", cb_auto.isChecked()))
+        cb_auto.stateChanged.connect(lambda *_: self._save_setting("auto_update", cb_auto.isChecked()))
         layout.addWidget(cb_auto)
         desc2 = QLabel("Download game updates automatically")
         desc2.setObjectName("mutedText")
@@ -420,7 +420,7 @@ class AboutPage(QWidget):
             discord_btn = QPushButton("Discord")
             discord_btn.setObjectName("toolBtn")
             discord_btn.setFixedHeight(38)
-            discord_btn.clicked.connect(lambda: webbrowser.open(DISCORD_INVITE))
+            discord_btn.clicked.connect(lambda *_: webbrowser.open(DISCORD_INVITE))
             links_row.addWidget(discord_btn)
         else:
             discord_btn = QPushButton("Discord (Coming soon)")
@@ -432,13 +432,13 @@ class AboutPage(QWidget):
         yt_btn = QPushButton("YouTube")
         yt_btn.setObjectName("toolBtn")
         yt_btn.setFixedHeight(38)
-        yt_btn.clicked.connect(lambda: webbrowser.open(YOUTUBE_CHANNEL))
+        yt_btn.clicked.connect(lambda *_: webbrowser.open(YOUTUBE_CHANNEL))
         links_row.addWidget(yt_btn)
 
         src_btn = QPushButton("Source Code")
         src_btn.setObjectName("toolBtn")
         src_btn.setFixedHeight(38)
-        src_btn.clicked.connect(lambda: webbrowser.open(SOURCE_CODE_URL))
+        src_btn.clicked.connect(lambda *_: webbrowser.open(SOURCE_CODE_URL))
         links_row.addWidget(src_btn)
         layout.addLayout(links_row)
 

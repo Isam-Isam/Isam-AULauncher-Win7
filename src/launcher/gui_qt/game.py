@@ -2,6 +2,8 @@
 GameManager — game launch, stop, update, and process tracking.
 All game lifecycle logic lives here; window.py just calls these methods.
 """
+from __future__ import annotations  # Must be the very first import line
+
 import sys
 import logging
 import subprocess

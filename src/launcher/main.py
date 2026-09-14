@@ -2,13 +2,25 @@
 Isam AULauncher — main entry point.
 Default: PySide6 (Qt) GUI with splash screen. Use --gui-2 for legacy Dear PyGui GUI.
 """
+from __future__ import annotations
+
 import sys
 import argparse
 import logging
+import traceback
 
 from PySide6.QtWidgets import QApplication, QMessageBox
 from PySide6.QtCore import QTimer, QSharedMemory
 from config import APP_NAME
+
+
+def custom_excepthook(type, value, tb):
+    logging.critical("Uncaught Exception", exc_info=(type, value, tb))
+    print("\n================ EXCEPTION TRACEBACK ================")
+    traceback.print_exception(type, value, tb)
+    print("====================================================\n")
+
+sys.excepthook = custom_excepthook
 
 
 if __name__ == "__main__":
@@ -66,10 +78,10 @@ if __name__ == "__main__":
                 from gui_qt.video_splash import VideoSplash
                 from gui_qt.splash import SplashScreen
 
-                def on_video_done():
+                def on_video_done(*_):
                     splash = SplashScreen()
 
-                    def on_splash_done():
+                    def on_splash_done(*_):
                         token = launcher._read_itch_token()
                         if token:
                             launcher.window.show()
@@ -78,7 +90,7 @@ if __name__ == "__main__":
                             launcher._login_window = LoginWindow()
                             launcher._login_window.show()
 
-                    splash.finished.connect(on_splash_done)
+                    splash.finished.connect(lambda *_: on_splash_done())
 
                     def boot():
                         splash.update_status("Loading profile...")
@@ -95,7 +107,7 @@ if __name__ == "__main__":
                     QTimer.singleShot(50, boot)
 
                 vsplash = VideoSplash()
-                vsplash.finished.connect(on_video_done)
+                vsplash.finished.connect(lambda *_: on_video_done())
                 vsplash.show()
                 vsplash.play()
 
@@ -105,7 +117,7 @@ if __name__ == "__main__":
 
             splash = SplashScreen()
 
-            def on_splash_done():
+            def on_splash_done(*_):
                 token = launcher._read_itch_token()
                 if token:
                     launcher.window.show()
@@ -114,7 +126,7 @@ if __name__ == "__main__":
                     launcher._login_window = LoginWindow()
                     launcher._login_window.show()
 
-            splash.finished.connect(on_splash_done)
+            splash.finished.connect(lambda *_: on_splash_done())
 
             _done = {"profile": False, "version": False}
 
@@ -124,11 +136,11 @@ if __name__ == "__main__":
                     qapp.processEvents()
                     splash.finish()
 
-            def profile_done():
+            def profile_done(*_):
                 _done["profile"] = True
                 check_done()
 
-            def version_done():
+            def version_done(*_):
                 _done["version"] = True
                 check_done()
 
@@ -172,7 +184,7 @@ if __name__ == "__main__":
             print(f"Error: {e}")
             try:
                 r = input("Enter to restart, 'exit' to quit: ").strip().lower()
-            except (EOFError, OSError):
+            except (EOFError, OSError, RuntimeError):
                 break
             if r == "exit":
                 break

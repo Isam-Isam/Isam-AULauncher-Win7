@@ -2,43 +2,65 @@
 Window — Steam-style sidebar launcher for Isam AULauncher (PySide6).
 Professional dark UI with sidebar navigation and stacked pages.
 """
-import os
-import sys
 import logging
+import os
 from pathlib import Path
+import sys
 
+from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QTimer, Qt
+from PySide6.QtGui import QAction, QIcon
 from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QPushButton, QStackedWidget, QLabel, QFrame, QProgressBar,
-    QStatusBar, QComboBox, QScrollArea, QSystemTrayIcon, QMenu,
+    QApplication,
+    QComboBox,
+    QFrame,
+    QGraphicsOpacityEffect,
+    QHBoxLayout,
+    QLabel,
     QListWidget,
+    QMainWindow,
+    QMenu,
+    QProgressBar,
+    QPushButton,
+    QScrollArea,
+    QStackedWidget,
+    QStatusBar,
+    QSystemTrayIcon,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve
-from PySide6.QtGui import QIcon, QAction
-from PySide6.QtWidgets import QGraphicsOpacityEffect
 
-from gui_qt.worker import _UISignaler, Worker
-from ..widgets import HeroBanner, _ICON_PATH, SIDEBAR_W, enable_hover_glow, start_playing_pulse, stop_playing_pulse
-from ..dialogs import SettingsPage, AboutPage
-
-from config import (
-    Config, APP_NAME, BRAND_SHORT, MAKER, LAUNCHER_VERSION,
-)
-from network import NetworkManager, DiscordRPC
+from config import APP_NAME, BRAND_SHORT, LAUNCHER_VERSION, MAKER, Config
+from gui_qt.game import GameManager
+from gui_qt.profiles import ProfileManager
+from gui_qt.regions import RegionManager
 import gui_qt.theme as theme
 from gui_qt.theme import apply_theme
-from gui_qt.game import GameManager
-from gui_qt.regions import RegionManager
-from gui_qt.profiles import ProfileManager
+from gui_qt.worker import Worker, _UISignaler
+from network import DiscordRPC, NetworkManager
 
+from ..dialogs import AboutPage, SettingsPage
+from ..widgets import (
+    _ICON_PATH,
+    SIDEBAR_W,
+    HeroBanner,
+    enable_hover_glow,
+    start_playing_pulse,
+    stop_playing_pulse,
+)
 from .game_actions import GameActionsMixin
-from .region_editor import RegionEditorMixin
-from .mod_manager import ModManagerMixin
 from .itch_profile import ItchProfileMixin
+from .mod_manager import ModManagerMixin
+from .region_editor import RegionEditorMixin
 from .updater import UpdaterMixin
 
 
-class LauncherApp(GameActionsMixin, RegionEditorMixin, ModManagerMixin, ItchProfileMixin, UpdaterMixin):
+class LauncherApp(
+    GameActionsMixin,
+    RegionEditorMixin,
+    ModManagerMixin,
+    ItchProfileMixin,
+    UpdaterMixin,
+):
     def __init__(self, existing_app=None):
         self.config = Config()
         self.network = NetworkManager()
@@ -67,7 +89,7 @@ class LauncherApp(GameActionsMixin, RegionEditorMixin, ModManagerMixin, ItchProf
 
         self._existing_app = existing_app
         self._ui_signaler = _UISignaler()
-        self._ui_signaler.invoke.connect(lambda fn: fn())
+        self._ui_signaler.invoke.connect(lambda func: func())
         self._shutting_down = False
         self._setup_app()
         self._build_ui()
@@ -77,7 +99,7 @@ class LauncherApp(GameActionsMixin, RegionEditorMixin, ModManagerMixin, ItchProf
 
     # ------------------------------------------------------------------ setup
     def _setup_app(self):
-        if hasattr(self, '_existing_app') and self._existing_app:
+        if hasattr(self, "_existing_app") and self._existing_app:
             self.app = self._existing_app
         else:
             self.app = QApplication(sys.argv)
@@ -128,7 +150,7 @@ class LauncherApp(GameActionsMixin, RegionEditorMixin, ModManagerMixin, ItchProf
     def _run(self, fn):
         """Run fn in a background thread."""
         w = Worker(fn)
-        w.finished.connect(lambda: self._cleanup_worker(w))
+        w.finished.connect(lambda *_: self._cleanup_worker(w))
         self._workers.append(w)
         w.start()
 
@@ -207,10 +229,14 @@ class LauncherApp(GameActionsMixin, RegionEditorMixin, ModManagerMixin, ItchProf
         self.page_tools = self._build_tools_page()
         self.page_profile = self._build_profile_page()
         self.page_mods = self._build_mods_page()
-        self.page_settings = SettingsPage(self.config, self.discord, self.profile_mgr)
+        self.page_settings = SettingsPage(
+            self.config, self.discord, self.profile_mgr
+        )
         self.page_about = AboutPage()
         self.page_assets = QWidget()
-        coming_soon = QLabel("Assets Manager coming soon in a future major version.")
+        coming_soon = QLabel(
+            "Assets Manager coming soon in a future major version."
+        )
         coming_soon.setObjectName("mutedText")
         coming_soon.setAlignment(Qt.AlignmentFlag.AlignCenter)
         QVBoxLayout(self.page_assets).addWidget(coming_soon)
@@ -223,12 +249,21 @@ class LauncherApp(GameActionsMixin, RegionEditorMixin, ModManagerMixin, ItchProf
         self.pages.addWidget(self.page_assets)
 
         self.nav_buttons = {}
-        for label, idx in [("Game", 0), ("Tools", 1), ("Profile", 2), ("Mods", 3),
-                           ("Settings", 4), ("About", 5), ("Assets", 6)]:
+        for label, idx in [
+            ("Game", 0),
+            ("Tools", 1),
+            ("Profile", 2),
+            ("Mods", 3),
+            ("Settings", 4),
+            ("About", 5),
+            ("Assets", 6),
+        ]:
             btn = QPushButton(label)
             btn.setCheckable(True)
             btn.setFixedHeight(42)
-            btn.clicked.connect(lambda checked, i=idx, l=label: self._switch_page(i, l))
+            btn.clicked.connect(
+                lambda checked, i=idx, l=label: self._switch_page(i, l)
+            )
             sidebar_layout.addWidget(btn)
             self.nav_buttons[label] = btn
             enable_hover_glow(btn)
@@ -246,13 +281,17 @@ class LauncherApp(GameActionsMixin, RegionEditorMixin, ModManagerMixin, ItchProf
         self.status_text_label.setObjectName("statusText")
         self.status_bar.addWidget(self.status_icon_label)
         self.status_bar.addWidget(self.status_text_label)
-        permanent_label = QLabel(f"{APP_NAME} v{LAUNCHER_VERSION} — Made by {MAKER}")
+        permanent_label = QLabel(
+            f"{APP_NAME} v{LAUNCHER_VERSION} — Made by {MAKER}"
+        )
         permanent_label.setObjectName("footerText")
         self.status_bar.addPermanentWidget(permanent_label)
 
         self.nav_buttons["Game"].setChecked(True)
         self.nav_buttons["Assets"].setEnabled(False)
-        self.nav_buttons["Assets"].setToolTip("Coming soon in a future major version")
+        self.nav_buttons["Assets"].setToolTip(
+            "Coming soon in a future major version"
+        )
 
     # ------------------------------------------------------------------ pages
     def _build_game_page(self):
@@ -365,7 +404,9 @@ class LauncherApp(GameActionsMixin, RegionEditorMixin, ModManagerMixin, ItchProf
         page = QWidget()
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
         scroll.setObjectName("toolsScroll")
 
         content = QWidget()
@@ -461,7 +502,9 @@ class LauncherApp(GameActionsMixin, RegionEditorMixin, ModManagerMixin, ItchProf
         zip_title.setObjectName("sectionTitle")
         layout.addWidget(zip_title)
 
-        zip_desc = QLabel("Extract mod files (BepInEx, etc.) into your game folder.")
+        zip_desc = QLabel(
+            "Extract mod files (BepInEx, etc.) into your game folder."
+        )
         zip_desc.setObjectName("statusText")
         layout.addWidget(zip_desc)
 
@@ -514,7 +557,9 @@ class LauncherApp(GameActionsMixin, RegionEditorMixin, ModManagerMixin, ItchProf
         page = QWidget()
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
 
         content = QWidget()
         layout = QVBoxLayout(content)
@@ -525,7 +570,9 @@ class LauncherApp(GameActionsMixin, RegionEditorMixin, ModManagerMixin, ItchProf
         title.setObjectName("sectionTitle")
         layout.addWidget(title)
 
-        desc = QLabel("Manage BepInEx mod profiles for Among Us.\nEach profile is an isolated set of mods — zero file duplication.")
+        desc = QLabel(
+            "Manage BepInEx mod profiles for Among Us.\nEach profile is an isolated set of mods — zero file duplication."
+        )
         desc.setObjectName("bodyText")
         desc.setWordWrap(True)
         layout.addWidget(desc)
@@ -545,7 +592,9 @@ class LauncherApp(GameActionsMixin, RegionEditorMixin, ModManagerMixin, ItchProf
         self._profile_combo = QComboBox()
         self._profile_combo.setFixedHeight(38)
         self._profile_combo.setMinimumWidth(200)
-        self._profile_combo.currentTextChanged.connect(self._on_profile_selected)
+        self._profile_combo.currentTextChanged.connect(
+            self._on_profile_selected
+        )
         prof_sel_row.addWidget(self._profile_combo)
 
         create_btn = QPushButton("Create")
@@ -654,7 +703,9 @@ class LauncherApp(GameActionsMixin, RegionEditorMixin, ModManagerMixin, ItchProf
         page = QWidget()
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
 
         content = QWidget()
         layout = QVBoxLayout(content)
@@ -767,8 +818,10 @@ class LauncherApp(GameActionsMixin, RegionEditorMixin, ModManagerMixin, ItchProf
         self.status_text_label.setText(text)
         if color_name:
             color_map = {
-                "success": theme.SUCCESS, "info": theme.INFO,
-                "danger": theme.DANGER, "warning": theme.WARNING,
+                "success": theme.SUCCESS,
+                "info": theme.INFO,
+                "danger": theme.DANGER,
+                "warning": theme.WARNING,
             }
             c = color_map.get(color_name, theme.TEXT_SECONDARY)
             self.game_status_icon.setStyleSheet(f"color: {c};")
@@ -785,7 +838,10 @@ class LauncherApp(GameActionsMixin, RegionEditorMixin, ModManagerMixin, ItchProf
 
     def _update_version_display(self):
         self.ver_installed.setText(self.current_version)
-        if self.current_version and self.current_version not in ("Not Installed", "Unknown"):
+        if self.current_version and self.current_version not in (
+            "Not Installed",
+            "Unknown",
+        ):
             self.ver_installed.setObjectName("successText")
         else:
             self.ver_installed.setObjectName("mutedText")
@@ -838,7 +894,7 @@ class LauncherApp(GameActionsMixin, RegionEditorMixin, ModManagerMixin, ItchProf
     # ------------------------------------------------------------------ shutdown
     def _close_event(self, event):
         """Minimize to tray instead of closing. Force-quit from tray menu."""
-        if getattr(self, '_force_quit', False):
+        if getattr(self, "_force_quit", False):
             self.shutdown()
             if self._tray:
                 self._tray.hide()
@@ -851,37 +907,4 @@ class LauncherApp(GameActionsMixin, RegionEditorMixin, ModManagerMixin, ItchProf
                 APP_NAME,
                 "Launcher minimized to tray. Right-click to restore or quit.",
                 QSystemTrayIcon.MessageIcon.Information,
-                2000,
             )
-        else:
-            self.shutdown()
-            event.accept()
-
-    def shutdown(self):
-        """Stop all background tasks, disconnect services."""
-        if self._shutting_down:
-            return
-        self._shutting_down = True
-        try:
-            if hasattr(self, '_game_timer') and self._game_timer:
-                self._game_timer.stop()
-        except Exception:
-            pass
-        try:
-            if self.game and self.game.is_running:
-                self.game.stop()
-        except Exception:
-            pass
-        try:
-            self.discord.disconnect()
-        except Exception:
-            pass
-        try:
-            self.network.session.close()
-        except Exception:
-            pass
-        for w in list(self._workers):
-            try:
-                w.wait(2000)
-            except Exception:
-                pass
